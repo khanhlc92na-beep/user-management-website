@@ -29,6 +29,8 @@ export const login = api<LoginRequest, AuthResponse>(
       throw APIError.unauthenticated("invalid credentials");
     }
 
+    // Use a default secret for local development if not configured
+    const secretKey = jwtSecret() || "default-local-secret-key-change-in-production";
     const token = jwt.sign(
       {
         userId: user.id,
@@ -37,7 +39,7 @@ export const login = api<LoginRequest, AuthResponse>(
         firstName: user.first_name,
         lastName: user.last_name,
       },
-      jwtSecret(),
+      secretKey,
       { expiresIn: "7d" }
     );
 

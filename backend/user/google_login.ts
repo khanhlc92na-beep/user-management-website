@@ -30,6 +30,14 @@ interface GoogleUserInfo {
 export const googleLogin = api<GoogleLoginRequest, AuthResponse>(
   { expose: true, method: "POST", path: "/auth/google" },
   async (req) => {
+    // Check if Google OAuth is configured
+    const clientId = googleClientId();
+    const clientSecret = googleClientSecret();
+    
+    if (!clientId || !clientSecret) {
+      throw APIError.unimplemented("Google OAuth is not configured");
+    }
+
     try {
       // Exchange authorization code for access token
       const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
@@ -39,8 +47,8 @@ export const googleLogin = api<GoogleLoginRequest, AuthResponse>(
         },
         body: new URLSearchParams({
           code: req.googleToken,
-          client_id: googleClientId(),
-          client_secret: googleClientSecret(),
+          client_id: clientId,
+          client_secret: clientSecret,
           redirect_uri: "postmessage", // For popup flow
           grant_type: "authorization_code",
         }),
@@ -105,6 +113,8 @@ export const googleLogin = api<GoogleLoginRequest, AuthResponse>(
         throw APIError.internal("Failed to create or retrieve user");
       }
 
+      // Use a default secret for local development if not configured
+      const secretKey = jwtSecret() || "default-local-secret-key-change-in-production";
       const token = jwt.sign(
         {
           userId: user.id,
@@ -113,7 +123,7 @@ export const googleLogin = api<GoogleLoginRequest, AuthResponse>(
           firstName: user.first_name,
           lastName: user.last_name,
         },
-        jwtSecret(),
+        secretKey,
         { expiresIn: "7d" }
       );
 

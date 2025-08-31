@@ -26,7 +26,9 @@ const auth = authHandler<AuthParams, AuthData>(
     }
 
     try {
-      const decoded = jwt.verify(token, jwtSecret()) as any;
+      // Use a default secret for local development if not configured
+      const secretKey = jwtSecret() || "default-local-secret-key-change-in-production";
+      const decoded = jwt.verify(token, secretKey) as any;
       return {
         userID: decoded.userId,
         email: decoded.email,
